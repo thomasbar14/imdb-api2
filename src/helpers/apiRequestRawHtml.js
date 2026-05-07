@@ -1,5 +1,8 @@
 import puppeteer from "@cloudflare/puppeteer";
 
+const HTML_CACHE_NAME = "imdb-html-cache";
+const HTML_CACHE_TTL = 86400; // 24 hours
+
 function looksBlocked(html) {
   if (!html || html.length < 500) return true;
 
@@ -27,6 +30,33 @@ function looksBlocked(html) {
   return indicators.some((s) => lower.includes(s.toLowerCase()));
 }
 
+async function getCachedHtml(url) {
+  try {
+    const cache = await caches.open(HTML_CACHE_NAME);
+    const cached = await cache.match(new Request(url));
+    if (cached) {
+      const text = await cached.text();
+      if (text && text.length > 500 && !looksBlocked(text)) {
+        return text;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function setCachedHtml(url, html) {
+  try {
+    const cache = await caches.open(HTML_CACHE_NAME);
+    const response = new Response(html, {
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": `max-age=${HTML_CACHE_TTL}`,
+      },
+    });
+    await cache.put(new Request(url), response);
+  } catch (_) {}
+}
+
 async function fetchWithBrowser(url, env) {
   if (!env?.MYBROWSER) {
     throw new Error(
@@ -38,7 +68,7 @@ async function fetchWithBrowser(url, env) {
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: 1920, height: 1080 });
+    await page.setViewport({ width: 1366, height: 768 });
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     );
@@ -46,38 +76,34 @@ async function fetchWithBrowser(url, env) {
       "Accept-Language": "en-US,en;q=0.9",
     });
 
-    // Intercept and block unnecessary resources to speed up loading
+    // Block heavy resources to speed up rendering
     await page.setRequestInterception(true);
     page.on("request", (req) => {
-      const resourceType = req.resourceType();
-      if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
+      const type = req.resourceType();
+      if (["image", "stylesheet", "font", "media", "manifest"].includes(type)) {
         req.abort();
       } else {
         req.continue();
       }
     });
 
-    // Navigate and wait for the page to settle
+    // Navigate and wait for JS hydration
     await page.goto(url, {
-      waitUntil: "networkidle0",
-      timeout: 30000,
+      waitUntil: "networkidle2",
+      timeout: 25000,
     });
 
-    // Wait a bit more for any post-navigation scripts
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // Wait for __NEXT_DATA__ to appear (this is what we actually need)
+    // Wait for the data we actually need
     try {
       await page.waitForFunction(
         () => !!document.getElementById("__NEXT_DATA__"),
-        { timeout: 10000 }
+        { timeout: 15000 }
       );
     } catch (_) {
-      // If it doesn't appear, the page might still be useful; don't fail here
+      // __NEXT_DATA__ might already be there; continue regardless
     }
 
-    // Get HTML. Use evaluate to avoid "execution context destroyed" errors
-    // from navigations that might have occurred.
+    // Extract HTML with retry to handle navigation edge cases
     let html = null;
     let attempts = 0;
     while (!html && attempts < 3) {
@@ -86,8 +112,7 @@ async function fetchWithBrowser(url, env) {
       } catch (e) {
         attempts++;
         if (attempts >= 3) throw e;
-        // Wait for page to stabilize after navigation
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 1000));
       }
     }
 
@@ -102,7 +127,11 @@ async function fetchWithBrowser(url, env) {
 }
 
 export default async function apiRequestRawHtml(url, env) {
-  // Attempt 1: Standard fetch with realistic browser headers
+  // 1. Check HTML cache first (fastest path)
+  const cached = await getCachedHtml(url);
+  if (cached) return cached;
+
+  // 2. Standard fetch with realistic browser headers
   try {
     const response = await fetch(url, {
       headers: {
@@ -126,6 +155,7 @@ export default async function apiRequestRawHtml(url, env) {
     if (response.ok) {
       const text = await response.text();
       if (!looksBlocked(text)) {
+        await setCachedHtml(url, text);
         return text;
       }
     }
@@ -133,8 +163,10 @@ export default async function apiRequestRawHtml(url, env) {
     // fall through to browser rendering
   }
 
-  // Attempt 2: Browser Rendering fallback
-  return await fetchWithBrowser(url, env);
+  // 3. Browser Rendering fallback
+  const html = await fetchWithBrowser(url, env);
+  await setCachedHtml(url, html);
+  return html;
 }
 
 export async function apiRequestJson(url) {
