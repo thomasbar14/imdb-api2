@@ -1,9 +1,9 @@
 import DomParser from "dom-parser";
 import apiRequestRawHtml from "./apiRequestRawHtml";
 
-export default async function seriesFetcher(id, env) {
+export default async function seriesFetcher(id) {
   try {
-    const firstSeason = await getSeason({ id, seasonId: 1, env });
+    const firstSeason = await getSeason({ id, seasonId: 1 });
 
     return {
       all_seasons: firstSeason.all_seasons,
@@ -22,10 +22,9 @@ export default async function seriesFetcher(id, env) {
   }
 }
 
-export async function getSeason({ id, seasonId, env }) {
+export async function getSeason({ id, seasonId }) {
   const html = await apiRequestRawHtml(
-    `https://www.imdb.com/title/${id}/episodes?season=${seasonId}`,
-    env
+    `https://www.imdb.com/title/${id}/episodes?season=${seasonId}`
   );
 
   let parser = new DomParser();

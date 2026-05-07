@@ -8,7 +8,7 @@ title.get("/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
-    const result = await getTitle(id, c.env);
+    const result = await getTitle(id);
 
     return c.json(result);
   } catch (error) {
@@ -24,7 +24,7 @@ title.get("/:id/season/:seasonId", async (c) => {
   const seasonId = c.req.param("seasonId");
 
   try {
-    const result = await getSeason({ id, seasonId, env: c.env });
+    const result = await getSeason({ id, seasonId });
 
     const response = Object.assign(
       {

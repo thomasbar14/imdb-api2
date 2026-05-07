@@ -7,8 +7,7 @@ export default async function userInfo(c) {
   try {
     const userId = c.req.param("id");
     const rawHtml = await apiRequestRawHtml(
-      `https://www.imdb.com/user/${userId}`,
-      c.env
+      `https://www.imdb.com/user/${userId}`
     );
 
     const parser = new DomParser();

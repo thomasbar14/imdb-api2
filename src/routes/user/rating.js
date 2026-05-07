@@ -26,7 +26,7 @@ export default async function userRating(c) {
 
     const constructedUrl = `https://www.imdb.com/user/${userId}/ratings?${query}`;
 
-    const rawHtml = await apiRequestRawHtml(constructedUrl, c.env);
+    const rawHtml = await apiRequestRawHtml(constructedUrl);
     const parser = new DomParser();
     const dom = parser.parseFromString(rawHtml);
 
@@ -58,7 +58,7 @@ export default async function userRating(c) {
       }
     } catch (_) {}
 
-    const allReviews = await parseReviews(userId, c.env);
+    const allReviews = await parseReviews(userId);
 
     // merge reviews
     all_ratings = all_ratings.map((rating) => {
@@ -91,12 +91,11 @@ export default async function userRating(c) {
   }
 }
 
-async function parseReviews(userId, env) {
+async function parseReviews(userId) {
   try {
     let data = [];
     const rawHtml = await apiRequestRawHtml(
-      `https://www.imdb.com/user/${userId}/reviews`,
-      env
+      `https://www.imdb.com/user/${userId}/reviews`
     );
 
     const parser = new DomParser();

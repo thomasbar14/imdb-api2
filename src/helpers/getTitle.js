@@ -2,9 +2,9 @@ import apiRequestRawHtml from "./apiRequestRawHtml";
 import DomParser from "dom-parser";
 import seriesFetcher from "./seriesFetcher";
 
-export default async function getTitle(id, env) {
+export default async function getTitle(id) {
   const parser = new DomParser();
-  const html = await apiRequestRawHtml(`https://www.imdb.com/title/${id}`, env);
+  const html = await apiRequestRawHtml(`https://www.imdb.com/title/${id}`);
   const dom = parser.parseFromString(html);
   const nextData = dom.getElementsByAttribute("id", "__NEXT_DATA__");
 
@@ -121,7 +121,7 @@ export default async function getTitle(id, env) {
       credits: e?.credits?.map((e2) => e2?.name?.nameText?.text) ?? [],
     })) ?? [],
     ...(props.aboveTheFoldData.titleType?.isSeries
-      ? await seriesFetcher(id, env)
+      ? await seriesFetcher(id)
       : {}),
   };
 }

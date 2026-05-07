@@ -2,6 +2,3 @@ name = "imdb-api2"
 main = "src/index.js"
 workers_dev = true
 compatibility_date = "2024-05-01"
-compatibility_flags = ["nodejs_compat"]
-
-browser = { binding = "MYBROWSER" }
