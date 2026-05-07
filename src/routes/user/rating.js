@@ -26,25 +26,7 @@ export default async function userRating(c) {
 
     const constructedUrl = `https://www.imdb.com/user/${userId}/ratings?${query}`;
 
-    const response = await fetch(constructedUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-        accept: "text/html",
-        "accept-language": "en-US",
-      },
-    });
-
-    if (!response.ok) {
-      errorStatus = response.status;
-      throw new Error(
-        errorStatus === 404
-          ? "Seems like user rating is not exixts."
-          : "Error fetching user rating."
-      );
-    }
-
-    const rawHtml = await response.text();
+    const rawHtml = await apiRequestRawHtml(constructedUrl, c.env);
     const parser = new DomParser();
     const dom = parser.parseFromString(rawHtml);
 
@@ -76,7 +58,7 @@ export default async function userRating(c) {
       }
     } catch (_) {}
 
-    const allReviews = await parseReviews(userId);
+    const allReviews = await parseReviews(userId, c.env);
 
     // merge reviews
     all_ratings = all_ratings.map((rating) => {
@@ -109,11 +91,12 @@ export default async function userRating(c) {
   }
 }
 
-async function parseReviews(userId) {
+async function parseReviews(userId, env) {
   try {
     let data = [];
     const rawHtml = await apiRequestRawHtml(
-      `https://www.imdb.com/user/${userId}/reviews`
+      `https://www.imdb.com/user/${userId}/reviews`,
+      env
     );
 
     const parser = new DomParser();

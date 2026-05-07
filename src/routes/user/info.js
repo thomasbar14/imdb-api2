@@ -1,29 +1,16 @@
 import DomParser from "dom-parser";
+import apiRequestRawHtml from "../../helpers/apiRequestRawHtml";
 
 export default async function userInfo(c) {
   let errorStatus = 500;
 
   try {
     const userId = c.req.param("id");
-    const response = await fetch(`https://www.imdb.com/user/${userId}`, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-        accept: "text/html",
-        "accept-language": "en-US",
-      },
-    });
+    const rawHtml = await apiRequestRawHtml(
+      `https://www.imdb.com/user/${userId}`,
+      c.env
+    );
 
-    if (!response.ok) {
-      errorStatus = response.status;
-      throw new Error(
-        errorStatus === 404
-          ? "Seems like user is not exixts."
-          : "Error fetching user info."
-      );
-    }
-
-    const rawHtml = await response.text();
     const parser = new DomParser();
     const dom = parser.parseFromString(rawHtml);
 

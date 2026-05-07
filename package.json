@@ -16,9 +16,10 @@
   "devDependencies": {
     "axios": "^0.27.2",
     "jest": "^28.1.0",
-    "wrangler": "^3.3.0"
+    "wrangler": "^3.60.0"
   },
   "dependencies": {
+    "@cloudflare/puppeteer": "^0.0.11",
     "dom-parser": "^0.1.6",
     "hono": "^1.4.1",
     "html-entities": "^2.3.3",

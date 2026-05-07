@@ -8,7 +8,7 @@ title.get("/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
-    const result = await getTitle(id);
+    const result = await getTitle(id, c.env);
 
     return c.json(result);
   } catch (error) {
@@ -24,7 +24,7 @@ title.get("/:id/season/:seasonId", async (c) => {
   const seasonId = c.req.param("seasonId");
 
   try {
-    const result = await getSeason({ id, seasonId });
+    const result = await getSeason({ id, seasonId, env: c.env });
 
     const response = Object.assign(
       {
@@ -46,9 +46,3 @@ title.get("/:id/season/:seasonId", async (c) => {
 });
 
 export default title;
-
-function getNode(dom, tag, id) {
-  return dom
-    .getElementsByTagName(tag)
-    .find((e) => e.attributes.find((e) => e.value === id));
-}

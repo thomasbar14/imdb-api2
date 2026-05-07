@@ -24,7 +24,8 @@ reviews.get("/:id", async (c) => {
     let rawHtml = await apiRequestRawHtml(
       `https://www.imdb.com/title/${id}/reviews/_ajax?sort=${
         option.key
-      }&dir=${sortOrder}${nextKey ? `&paginationKey=${nextKey}` : ""}`
+      }&dir=${sortOrder}${nextKey ? `&paginationKey=${nextKey}` : ""}`,
+      c.env
     );
     let dom = parser.parseFromString(rawHtml);
 
