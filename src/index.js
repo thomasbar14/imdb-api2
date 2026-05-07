@@ -18,4 +18,4 @@ app.route("/reviews", reviews);
 app.route("/user", userRoutes);
 app.route("/", index);
 
-app.fire();
+export default app;
